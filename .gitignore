@@ -1,3 +1,4 @@
 instruction.md
 expenses.json
 .claude/
+__pycache__/

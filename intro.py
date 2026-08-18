@@ -1,25 +1,29 @@
-import json
-import os
+import helpers
+import tracker
 
-DATA_PATH = os.path.dirname(os.path.abspath(__file__))
-JSON_DATA = os.path.join(DATA_PATH,'expenses.json')
+def main():
+    """Run the main menu loop, handling Add/Log/Quit until the user exits or cancels."""
+    while True:
+        try:
+            print("Menu:\n1. Add\n2. Log\n3. Quit")
+            option = helpers.read_int('Enter your choice: ')
+            valid_option = helpers.value_in_options(option,1,2,3)
+            if valid_option:
+                if option == 1:
+                    tracker.add_complete_purchase()
+                elif option == 2:
+                    tracker.log()
+                else:
+                    print('Program finished')
+                    break
+            else:
+                print("Enter a valid option")
+        except helpers.Cancelled:
+            print('Program finished')
+            break
 
-def load_json(path,default):
-    if not os.path.exists(path):
-        print(f'The path does not exist: {path}') 
-        return default
-    if os.path.getsize(path) == 0:
-        print('This file is empty')
-        return default
-    try:
-        with open(path,'r',encoding='utf-8') as file:
-                return json.load(file)
-    except json.JSONDecodeError as error:
-            print(f'Invalid JSON content: {error}')
-            return default
+if __name__ == '__main__': 
+    main()
 
 
-def save_json(path,data):
-        with open(path, 'w', encoding='utf-8') as file:
-            json.dump(data,file)
 
