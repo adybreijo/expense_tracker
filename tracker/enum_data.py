@@ -1,15 +1,8 @@
-
-def product_for_category():
-    """
-    first select category
-    give a number to each product for each category
-    """
+def categories(expenses):
     pass
 
-def categories():
-    """enumerate categories"""
+def product_for_category(expenses):
     pass
 
-def stores():
-    """enumerate stores"""
+def stores_nums(expenses):
     pass
