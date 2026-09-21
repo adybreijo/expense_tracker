@@ -2,9 +2,10 @@ import json
 import os
 
 DATA_PATH = os.path.dirname(os.path.abspath(__file__))
-JSON_DATA = os.path.join(DATA_PATH,'expenses.json')
+JSON_DATA = os.path.join(DATA_PATH, "expenses.json")
 
-def load_json(default,path=JSON_DATA):
+
+def load_json(default, path=JSON_DATA):
     """Load JSON data from disk.
     Args:
         default: Value to return if the file does not exist, is empty,
@@ -17,20 +18,25 @@ def load_json(default,path=JSON_DATA):
         return default
 
     try:
-        with open(path,'r',encoding='utf-8') as file:
+        with open(path, "r", encoding="utf-8") as file:
             return json.load(file)
     except json.JSONDecodeError as error:
-        print(f'Warning: {path} contains invalid JSON ({error})')
-        print('Starting empty — saving will overwrite the existing file.')
+        backup_path = path + '.bak'
+        os.replace(path,backup_path)
+        print(f"Warning: {path} contains invalid JSON ({error})")
+        print(f"The original was moved to {backup_path}. Starting empty.")
         return default
 
 
-def save_json(data,path=JSON_DATA):
+def save_json(data, path=JSON_DATA):
     """Write data to disk as JSON, overwriting the existing file.
     Args:
-        data: A JSON-serializable object (e.g. list of dicts).
+        data: A JSON-serializable object (here, the full data dict).
         path: Path to the JSON file. Defaults to JSON_DATA.
     """
 
-    with open(path, 'w', encoding='utf-8') as file:
-        json.dump(data,file,ensure_ascii=False ,indent=4)
+    temp_path = path + ".tmp"
+    with open(temp_path, "w", encoding="utf-8") as file:
+        json.dump(data, file, ensure_ascii=False, indent=4)
+    os.replace(temp_path, path)
+
