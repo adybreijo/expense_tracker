@@ -4,47 +4,25 @@ import storage
 from . import purchases, queries
 
 
-def _chose_filter():
-    """Ask the user which field to filter expenses by.
-
-    Returns:
-        str: One of "store", "date", "product", "category".
-
-    Raises:
-        Cancelled: If the user types a cancel word.
-    """
-    filters = {1: "store", 2: "date", 3: "product", 4: "category"}
-    while True:
-        print("Chose filter:\n1. Store\n2. Date\n3. Product\n4. Category")
-        by_filter = cli.read_int(">>: ")
-        if not cli.value_in_options(by_filter, 1, 2, 3, 4):
-            print("Please choose 1, 2, 3 or 4.")
-            continue
-        return filters[by_filter]
-
-
-def log(data):
-    """Ask the user for a filter and value, and return the matching expenses.
-
-    Loops until at least one matching expense is found.
-
+def data_by_filter(data):
+    """Ask the user for a filter and value, and return the matching receipts.
+    Filters by store, exact date, product or category. Loops until at least
+    one matching receipt is found.
     Args:
-        data: The full data dict ({"expenses": [...], "receipts": [...]}).
-
+        data: The full data dict ({"receipts": [...]}).
     Returns:
-        list: The expense dicts matching the chosen filter and value.
-
-    Raises:
-        Cancelled: If the user types a cancel word.
+        list: The receipt dicts matching the chosen filter and value, each listed once.
     """
-    print("Enter the filter and the date you want to search for: ")
-
-    stores = queries.fields_names(data["expenses"], "store")
-    products = queries.fields_names(data["expenses"], "product")
-    categories = queries.fields_names(data["expenses"], "category")
+    print("Enter the filter you want to search for: ")
+    stores = queries.fields_names(data["receipts"], "store")
+    products = queries.fields_names(queries.only_products(data), "product")
+    categories = queries.fields_names(queries.only_products(data), "category")
     values_by_field = {"store": stores, "product": products, "category": categories}
+
     while True:
-        filter_user = _chose_filter()
+        filter_user = cli.chose_from_list(
+            ("store", "date", "product", "category"), "Chose filter: "
+        )
 
         if filter_user == "date":
             value = cli.add_valid_date()
@@ -55,64 +33,77 @@ def log(data):
                 continue
             value = cli.chose_from_list(options, f"Choose {filter_user}: ")
 
-        results = queries.filter_by_field(data["expenses"], filter_user, value)
+        pairs = queries.filter_pairs(queries.receipt_product(data), filter_user, value)
+        results = []
+        seen_ids = set()
+
+        for receipt, _ in pairs:
+            if receipt["receipt_id"] not in seen_ids:
+                results.append(receipt)
+                seen_ids.add(receipt["receipt_id"])
         if not results:
             print(f"No expenses found for that {filter_user}.")
             continue
         return results
 
 
-def edit_expense(info_by_category, all_info):
-    """Let the user pick one expense from a filtered list and edit it.
-
+def choose_receipt(receipts, prompt="Choose a receipt: "):
+    """Print each candidate receipt and let the user pick one.
     Args:
-        info_by_category: List of expense dicts to choose from (the result
-            of log()).
-        all_info: The full data dict; the matching expense is replaced in
-            all_info["expenses"] and the change is saved to disk.
-
+        receipts: List of receipt dicts to choose from.
+        prompt: Text shown above the numbered list.
+    Returns:
+        dict: The chosen receipt.
     Raises:
         Cancelled: If the user types a cancel word.
     """
-    existing = cli.chose_from_list(
-        info_by_category, "Enter the number of the data to modify: "
-    )
-    print(", ".join(f"{k}: {v}" for k, v in existing.items()))
-    updated = purchases.add_expense_fields(
-        all_info, defaults=existing, ask_date_store=True
-    )
-    index = next(i for i, exp in enumerate(all_info["expenses"]) if exp is existing)
-    all_info["expenses"][index] = updated
+    print(prompt)
+    for number, receipt in enumerate(receipts, start=1):
+        print(
+            f"{number}: {receipt['date']} - {receipt['store'].capitalize()} - ${receipt['total_paid']:.2f}"
+        )
 
-    storage.save_json(all_info)
+    while True:
+        chose = cli.read_int(prompt=">>: ")
+        if cli.value_in_options(chose, *range(1, len(receipts) + 1)):
+            return receipts[chose - 1]
+        print("Enter a valid option.")
 
 
 def delete_expense(info_by_category, all_info):
-    """Let the user pick one expense from a filtered list and delete it.
+    """Let the user pick one receipt from a filtered list and delete it.
 
     Asks for confirmation before deleting.
 
     Args:
-        info_by_category: List of expense dicts to choose from (the result
-            of log()).
-        all_info: The full data dict; the matching expense is removed from
-            all_info["expenses"] and the change is saved to disk.
+        info_by_category: List of receipt dicts to choose from (the result
+            of data_by_filter()).
+        all_info: The full data dict; the matching receipt is removed from
+            all_info["receipts"] and the change is saved to disk.
 
     Raises:
         Cancelled: If the user types a cancel word.
     """
-    delete = cli.chose_from_list(
-        info_by_category, "Enter the number of the data to delete: "
+    delete = choose_receipt(
+        info_by_category, prompt="Enter the number of the data to delete: "
     )
-    print(", ".join(f"{k}: {v}" for k, v in delete.items()))
-    confirm = cli.yes_no_question("Delete this information??")
+    print(
+        ", ".join(
+            f"{k}: {v}"
+            for k, v in delete.items()
+            if k != "products" and k != "receipt_id"
+        )
+    )
+    confirm = cli.yes_no_question("Delete this information?? (y/n): ")
     if confirm:
-        index = next(i for i, exp in enumerate(all_info["expenses"]) if exp is delete)
-        del all_info["expenses"][index]
+        for index, receipt in enumerate(all_info["receipts"]):
+            if receipt["receipt_id"] == delete["receipt_id"]:
+                del all_info["receipts"][index]
+                break
         storage.save_json(all_info)
         print("Information deleted successfully")
     else:
-        print("Operation canceled")
+        print("Operation canceled\n")
 
 
 def _is_period_ok(start_date, end_date):
@@ -129,39 +120,37 @@ def _is_period_ok(start_date, end_date):
 
 
 def manage_expenses(data):
-    """Run the Edit/Delete/Purchase-for-period submenu until the user goes back.
-
+    """Run the Delete/Purchase-for-period submenu until the user goes back.
     Args:
-        data: The full data dict ({"expenses": [...], "receipts": [...]}).
-
-    Raises:
-        Cancelled: If the user types a cancel word (currently propagates
-            to the caller instead of returning to this submenu — see note
-            above).
+        data: The full data dict ({"receipts": [...]}).
     """
-    while True:
-        print("1. Edit\n2. Delete\n3.Purchase for period\n4.Go back to main menu")
-        option = cli.read_int("Chose an option from menu:", min_value=1)
-        if not cli.value_in_options(option, 1, 2, 3, 4):
-            print("Enter a valid number.")
-            continue
 
-        if option == 1:
-            print("Edit information")
-            info_by_filter = log(data)
-            edit_expense(info_by_filter, data)
-            print("Information modified succesfully")
-        elif option == 2:
-            info_by_filter = log(data)
-            delete_expense(info_by_filter, data)
-        elif option == 3:
-            while True:
-                start_date = cli.add_valid_date()
-                end_date = cli.add_valid_date()
-                if _is_period_ok(start_date, end_date):
-                    break
-            by_period = queries.filter_by_period(data["expenses"], start_date, end_date)
-            for expense in by_period:
-                print(", ".join(f"{k}: {v}" for k, v in expense.items()))
-        else:
-            break
+    while True:
+        try:
+            print("Menu:\n1. Delete\n2. Purchase for period\n3. Go back to main menu")
+            option = cli.read_int("Chose an option from menu: ", min_value=1)
+            if not cli.value_in_options(option, 1, 2, 3):
+                print("Enter a valid number.")
+                continue
+
+            if option == 1:
+                print("\n--Delete information--")
+                # modify to delete all receipt
+                info_by_filter = data_by_filter(data)
+                delete_expense(info_by_filter, data)
+            elif option == 2:
+                while True:
+                    start_date = cli.add_valid_date(prompt="Enter the first date: ")
+                    end_date = cli.add_valid_date(prompt="Enter the second date: ")
+                    if _is_period_ok(start_date, end_date):
+                        break
+                    print("Enter a start date lower than a second date")
+                by_period = queries.filter_by_period(data["receipts"], start_date, end_date)
+                if by_period:
+                    for expense in by_period:
+                        print(", ".join(f"{k}: {v}" for k, v in expense.items()))
+                else:
+                    print("There are not receipts on that period.")
+    
+        except cli.Cancelled:
+            print()

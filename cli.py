@@ -1,3 +1,6 @@
+from datetime import date
+import math
+
 import dates
 
 CANCEL_WORDS = {"q", "quit", "cancel"}
@@ -9,13 +12,10 @@ class Cancelled(Exception):
 
 def check_cancel(entry):
     """Check whether the user typed a word that means "cancel".
-
     Args:
         entry: The raw text the user typed.
-
     Returns:
         str: The same entry, unchanged, if it is not a cancel word.
-
     Raises:
         Cancelled: If entry (case-insensitive, stripped) is one of CANCEL_WORDS.
     """
@@ -24,37 +24,33 @@ def check_cancel(entry):
     return entry
 
 
-def read_int(prompt, default=None, min_value=0):
+def read_int(prompt="Enter a valid number", default=None, min_value=0):
     """Prompt the user for an integer, retrying until a valid one is entered.
-
     Args:
         prompt: Text shown to the user.
         default: Value returned if the user presses Enter without typing anything.
         min_value: Smallest value accepted; lower entries are rejected.
-
     Returns:
         int: The value the user entered, or default.
-
     Raises:
         Cancelled: If the user types a cancel word.
     """
+
     return _read_number(prompt, int, default, min_value)
 
 
 def read_float(prompt, default=None, min_value=0):
     """Prompt the user for a float, retrying until a valid one is entered.
-
     Args:
         prompt: Text shown to the user.
         default: Value returned if the user presses Enter without typing anything.
         min_value: Smallest value accepted; lower entries are rejected.
-
     Returns:
         float: The value the user entered, or default.
-
     Raises:
         Cancelled: If the user types a cancel word.
     """
+
     return _read_number(prompt, float, default, min_value)
 
 
@@ -74,6 +70,7 @@ def _read_number(prompt, cast, default=None, min_value=0):
         Cancelled: If the user types a cancel word.
     """
     while True:
+
         entry = check_cancel(input(prompt)).strip()
 
         if not entry and default is not None:
@@ -82,6 +79,10 @@ def _read_number(prompt, cast, default=None, min_value=0):
         try:
             value = cast(entry)
         except ValueError:
+            print("Enter a valid number, try again...")
+            continue
+
+        if not math.isfinite(value):
             print("Enter a valid number, try again...")
             continue
 
@@ -101,7 +102,7 @@ def valid_string(prompt, default=None, letters_only=False):
             than letters or spaces.
 
     Returns:
-        str: The text the user entered, or default.
+        str: The text the user entered, in lowercase, or default.
 
     Raises:
         Cancelled: If the user types a cancel word.
@@ -119,7 +120,7 @@ def valid_string(prompt, default=None, letters_only=False):
         if letters_only and not all(c.isalpha() or c.isspace() for c in info):
             print("Only letters are allowed, try again...")
             continue
-        return info
+        return info.lower()
 
 
 def yes_no_question(prompt):
@@ -165,53 +166,50 @@ def value_in_options(value, *options):
 
 def chose_from_list(options, prompt="Choose the number: ", default=None):
     """Print a numbered list and let the user pick one item from it.
-
     Args:
-        options: Sequence of items to choose from; each is shown by its
-            position (1-based).
+        options: Sequence of strings to choose from; each is shown by its
+            position (1-based). Items must be strings (they are capitalized
+            for display).
         prompt: Text shown when asking for the number.
         default: Item to return if the user presses Enter without typing
             anything; must be present in options to take effect.
-
     Returns:
         The selected item from options.
-
     Raises:
         Cancelled: If the user types a cancel word.
     """
     if options:
-        print("Enter the number of the option you want: ")
+        print(prompt)
         for number, name in enumerate(options, start=1):
-            print(f"{number}: {name}")
+            print(f"{number}: {name.capitalize()}")
 
     default_index = options.index(default) + 1 if default in options else None
 
     while True:
-        chose = read_int(prompt, default=default_index)
+        chose = read_int(prompt=">>: ", default=default_index)
         if value_in_options(chose, *range(1, len(options) + 1)):
             return options[chose - 1]
         print("Enter a valid option.")
 
 
 def add_valid_date(
-    prompt="Enter a date [YYYY-MM-DD]: ", default=None, allow_future=False
+    prompt="Enter a date [DD-MM-YYYY]: ", default=None, allow_future=False
 ):
     """Prompt the user for a date and return it in ISO format.
-
     Args:
         prompt: Text shown to the user; if default is given, the default
             date is appended to it in brackets.
-        default: Date (string YYYY-MM-DD or date object) returned if the
+        default: Date (ISO string YYYY-MM-DD or date object) returned if the
             user presses Enter without typing anything.
         allow_future: If False (default), reject dates later than today.
-
     Returns:
-        str: The chosen date as YYYY-MM-DD.
-
+        str: The chosen date in ISO format (YYYY-MM-DD).
     Raises:
         Cancelled: If the user types a cancel word.
     """
     if default is not None:
+        if isinstance(default, str):
+            default = date.fromisoformat(default)
         default = dates.parse_date(default, allow_future)
         prompt = f"{prompt.rstrip()} [{default.isoformat()}]: "
 

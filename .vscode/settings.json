@@ -9,5 +9,8 @@
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  },
+  "window.autoDetectColorScheme": true,
+  "workbench.preferredDarkColorTheme": "Dark Modern",
+  "workbench.preferredLightColorTheme": "Solarized Light"
 }
