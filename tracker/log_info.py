@@ -59,8 +59,11 @@ def choose_receipt(receipts, prompt="Choose a receipt: "):
     """
     print(prompt)
     for number, receipt in enumerate(receipts, start=1):
+        price = f"${receipt['total_paid']:.2f}"
+        date = receipt['date']
+        store = receipt['store'].capitalize()
         print(
-            f"{number}: {receipt['date']} - {receipt['store'].capitalize()} - ${receipt['total_paid']:.2f}"
+            f"{number}: {date} - {store:<8} - ${price:>9}"
         )
 
     while True:
@@ -118,6 +121,25 @@ def _is_period_ok(start_date, end_date):
     """
     return start_date <= end_date
 
+def _current_dates_period(data):
+    dates = [receipt['date'] for receipt in data]
+    return min(dates),max(dates)
+
+def _print_receipt(receipt,receipt_number):
+    date = receipt['date']
+    store = receipt['store']
+    total_paid = receipt['total_paid']
+    notes = receipt['notes']
+    print(f"Receipt # {receipt_number}:")
+    print(f"    Store: {store.capitalize()}\n    Date: {date}\n    Total paid: ${total_paid}\n    Notes: {notes}")
+    products = receipt['products']
+    for product_number, prod in enumerate(products, start=1):
+        name = prod['product']
+        category = prod['category']
+        price = prod['unit_price']
+        paid = prod['paid_product']
+        print(f"    # {product_number} - Product: {name.capitalize()}")
+        print(f"        Category: {category.capitalize()}\n        Unit_price: ${price}\n        Paid: ${paid}")
 
 def manage_expenses(data):
     """Run the Delete/Purchase-for-period submenu until the user goes back.
@@ -139,7 +161,10 @@ def manage_expenses(data):
                 info_by_filter = data_by_filter(data)
                 delete_expense(info_by_filter, data)
             elif option == 2:
+                print("\n--Purchase for period--")
                 while True:
+                    min_date,max_date = _current_dates_period(data["receipts"])
+                    print(f"Your receipts go to {min_date} - {max_date}")
                     start_date = cli.add_valid_date(prompt="Enter the first date: ")
                     end_date = cli.add_valid_date(prompt="Enter the second date: ")
                     if _is_period_ok(start_date, end_date):
@@ -147,10 +172,15 @@ def manage_expenses(data):
                     print("Enter a start date lower than a second date")
                 by_period = queries.filter_by_period(data["receipts"], start_date, end_date)
                 if by_period:
-                    for expense in by_period:
-                        print(", ".join(f"{k}: {v}" for k, v in expense.items()))
+                    print(f"\nIn this period you have {len(by_period)} receipts")
+                    for receipt_number,expense in (enumerate(by_period,start=1)):
+                        _print_receipt(expense,receipt_number)
+                        print()
                 else:
-                    print("There are not receipts on that period.")
+                    print("There are not receipts on that period.\n")
+            else:
+                print()
+                break
     
         except cli.Cancelled:
             print()
