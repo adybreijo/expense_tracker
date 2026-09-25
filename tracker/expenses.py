@@ -5,3 +5,6 @@ def expenses_by_filter(data):
 
 def total(expenses):
     pass
+
+
+#  add new index to menu to see a complete info data: total purchases, stores, dates, categories,....

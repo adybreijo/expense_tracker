@@ -1,7 +1,7 @@
 import cli
 import storage
 
-from . import queries
+from . import queries, log_info
 
 
 def add_data(previous_data, prompt, field, default=None):
@@ -71,17 +71,14 @@ def add_product_fields(known_products):
 
 def ask_fixed_data(source_list):
     """Prompt for the receipt-level fields of a new purchase.
-
     Args:
-        source_list: List of receipt dicts used to suggest previously used
-            store names.
-
+        source_list: List of receipt dicts used to suggest previously used store names.
     Returns:
         tuple: (date, store, total_paid, notes) for the receipt.
-
     Raises:
         Cancelled: If the user types a cancel word.
     """
+
     date = cli.add_valid_date("Date [DD-MM-YYYY]: ")
     print()
     store = add_data(source_list, "Store: ", "store")
@@ -89,6 +86,7 @@ def ask_fixed_data(source_list):
     total_paid = cli.read_float("Enter the total you paid: ", min_value=0.01)
     print()
     notes = cli.check_cancel(input("Notes: ")).strip()
+
     return date, store, total_paid, notes
 
 
@@ -97,45 +95,37 @@ def modify_fixed_data(fixed_data_info):
     Shows the current values, then repeatedly asks which field to correct
     and its new value, until the user says there's nothing else to fix.
     Fields not chosen keep the value they came in with.
-
     Args:
-        fixed_data_info: dict with the receipt's current "date", "store",
-            "total_paid" and "notes".
-
+        fixed_data_info: dict with the receipt's current "date", "store", "total_paid" and "notes".
     Returns:
         tuple: (date, store, total_paid, notes) with the corrections applied.
-
     Raises:
         Cancelled: If the user types a cancel word.
     """
+
     date, store, total_paid, notes = (
         fixed_data_info["date"],
         fixed_data_info["store"],
         fixed_data_info["total_paid"],
         fixed_data_info["notes"],
     )
+
     while True:
-        print(
-            f"Fields saved: \nDate: {date}\nStore: {store}\nTotal paid: ${total_paid}\nNotes: {notes}\n"
-        )
-        field = cli.chose_from_list(
-            ("Date", "Store", "Total paid", "Notes"), "Which field you want to modify: "
-        )
+        print(f"Fields saved: \nDate: {date}\nStore: {store}\nTotal paid: ${total_paid}\nNotes: {notes}\n")
+        field = cli.chose_from_list(("Date", "Store", "Total paid", "Notes"), "Which field you want to modify: ")
+
         if field == "Date":
             date = cli.add_valid_date("Enter a new date", default=date)
         elif field == "Store":
             store = cli.valid_string("Enter the new store name: ", default=store)
         elif field == "Total paid":
-            total_paid = cli.read_float(
-                ("Enter the new total paid: "), min_value=0.01, default=total_paid
-            )
+            total_paid = cli.read_float(("Enter the new total paid: "), min_value=0.01, default=total_paid)
         else:
             notes = cli.check_cancel(input("Enter the new notes: ")).strip() or notes
         exit = cli.yes_no_question("Fix another field (y/n): ")
+
         if not exit:
-            print(
-                f"\nFinal data: \nDate: {date}\nStore: {store}\nTotal paid: ${total_paid}\nNotes: {notes}"
-            )
+            print(f"\nFinal data: \nDate: {date}\nStore: {store}\nTotal paid: ${total_paid}\nNotes: {notes}")
             break
     return date, store, total_paid, notes
 
@@ -152,7 +142,7 @@ def modify_product(product_info):
             "unit_price" and "paid_product".
 
     Returns:
-        dict: The product with "product", "category", "unit_price" 
+        dict: The product with "product", "category", "unit_price"
             and "paid_product" filled in (no "product_id" yet).
 
     Raises:
@@ -178,14 +168,10 @@ def modify_product(product_info):
             product = cli.valid_string("Enter the new product name: ", default=product)
 
         elif field == "Category":
-            category = cli.valid_string(
-                "Enter the new category name: ", default=category
-            )
+            category = cli.valid_string("Enter the new category name: ", default=category)
 
         elif field == "Unit price":
-            unit_price = cli.read_float(
-                ("Enter the new price for unit: "), min_value=0.01, default=unit_price
-            )
+            unit_price = cli.read_float(("Enter the new price for unit: "), min_value=0.01, default=unit_price)
 
         else:
             paid_product = cli.read_float(
@@ -209,6 +195,57 @@ def modify_product(product_info):
     }
 
 
+def create_products_data(data, list_products=None):
+    if list_products is None:
+        list_products = []
+    try:
+        while True:
+            print(f"\nProducts so far: {len(list_products)}")
+            known_products = queries.only_products(data) + list_products
+            new_expense = add_product_fields(known_products)
+            while True:
+                action = cli.yes_no_question("Fix product info (y/n): ")
+                if action:
+                    print("--Modify product--")
+                    new_expense = modify_product(new_expense)
+                else:
+                    break
+            new_expense["product_id"] = queries.generate_id(list_products, "product_id")
+            list_products.append(new_expense)
+            print(f" -- {new_expense['product'].capitalize()}  -{new_expense['category']} -${new_expense['paid_product']:.2f}")
+            new_product = cli.yes_no_question("Add more products (y/n): ")
+            if not new_product:
+                break
+    except cli.Cancelled:
+        print("\nOperation cancelled by user.\n")
+    return list_products
+
+
+def add_product_incomplete_receipt(data):
+    """Let the user pick an existing receipt and add more products to it.
+    Args:
+        data: The full data dict ({"receipts": [...]}); the chosen receipt is updated in place and the result is saved to disk.
+    Raises:
+        Cancelled: If the user types a cancel word while choosing the receipt.
+    """
+    receipt = log_info.choose_receipt(data["receipts"])
+    if receipt is None:
+        return
+
+    products_before = len(receipt["products"])
+    create_products_data(data, receipt["products"])
+    added = len(receipt["products"]) - products_before
+    if added == 0:
+        print("Nothing was added")
+        return
+
+    store = receipt["store"]
+    total_paid = receipt["total_paid"]
+
+    print(f"Receipt updated: {store.capitalize()}, {added} product(s) added, total: ${total_paid:.2f}\n\n")
+    storage.save_json(data)
+
+
 def add_complete_purchase(data):
     """Run the full "add a purchase" flow and persist the result.
 
@@ -226,11 +263,9 @@ def add_complete_purchase(data):
             appended to it and the result is saved to disk.
     """
     print("-- Add new expenses to your list or purchases --")
-    print(
-        f" [Type: *{', '.join(cli.CANCEL_WORDS)}'* at any time to cancel and return to the menu.]\n"
-    )
+    print(f" [Type: *{', '.join(cli.CANCEL_WORDS)}'* at any time to cancel and return to the menu.]\n")
     print("Please enter your purchase information as follows:")
-    expenses = []
+    products = []
 
     try:
         receipt_id = queries.generate_id(data["receipts"], "receipt_id")
@@ -247,29 +282,11 @@ def add_complete_purchase(data):
             }
             date, store, total_paid, notes = modify_fixed_data(defaults)
 
-        while True:
-            print(f"\nProducts so far: {len(expenses)}")
-            known_products = queries.only_products(data) + expenses
-            new_expense = add_product_fields(known_products)
-            while True:
-                action = cli.yes_no_question("Fix product info (y/n): ")
-                if action:
-                    print("--Modify product--")
-                    new_expense = modify_product(new_expense)
-                else:
-                    break
-            new_expense["product_id"] = queries.generate_id(expenses, "product_id")
-            expenses.append(new_expense)
-            print(
-                f" -- {new_expense['product'].capitalize()}  -{new_expense['category']} -${new_expense['paid_product']:.2f}"
-            )
-            new_product = cli.yes_no_question("Add more products (y/n): ")
-            if not new_product:
-                break
+        products = create_products_data(data, products)
     except cli.Cancelled:
-        print()
+        print("\nOperation cancelled by user.\n")
 
-    if not expenses:
+    if not products:
         print("Nothing was added")
         return
     receipt = {
@@ -278,11 +295,30 @@ def add_complete_purchase(data):
         "store": store,
         "total_paid": total_paid,
         "notes": notes,
-        "products": expenses,
+        "products": products,
     }
 
     data["receipts"].append(receipt)
-    print(
-        f"Receipt saved: {store.capitalize()}, {len(expenses)} product(s), total: ${total_paid:.2f}\n\n"
-    )
+    print(f"Receipt saved: {store.capitalize()}, {len(products)} product(s), total: ${total_paid:.2f}\n\n")
     storage.save_json(data)
+
+
+def add_purchase_menu(data):
+    try:
+        print("\nMenu:\n1. Add complete receipt\n2. Add products to a receipt\n3. Go back to main menu")
+        while True:
+            user_input = cli.read_int(prompt=">>: ")
+            choice = cli.value_in_options(user_input, 1, 2, 3)
+            if choice:
+                break
+            print("Enter a valid option")
+        if user_input == 1:
+            print("--Add complete receipt--")
+            add_complete_purchase(data)
+        elif user_input == 2:
+            print("--Add products to a receipt--")
+            add_product_incomplete_receipt(data)
+        else:
+            return
+    except cli.Cancelled:
+        print("\nOperation cancelled by user.\n")

@@ -1,7 +1,7 @@
 import cli
 import storage
 
-from . import purchases, queries
+from . import queries
 
 
 def data_by_filter(data):
@@ -20,9 +20,7 @@ def data_by_filter(data):
     values_by_field = {"store": stores, "product": products, "category": categories}
 
     while True:
-        filter_user = cli.chose_from_list(
-            ("store", "date", "product", "category"), "Chose filter: "
-        )
+        filter_user = cli.chose_from_list(("store", "date", "product", "category"), "Chose filter: ")
 
         if filter_user == "date":
             value = cli.add_valid_date()
@@ -57,19 +55,21 @@ def choose_receipt(receipts, prompt="Choose a receipt: "):
     Raises:
         Cancelled: If the user types a cancel word.
     """
+    if not receipts:
+        print("There are not receipts to show.")
+        return None
     print(prompt)
-    for number, receipt in enumerate(receipts, start=1):
-        price = f"${receipt['total_paid']:.2f}"
-        date = receipt['date']
-        store = receipt['store'].capitalize()
-        print(
-            f"{number}: {date} - {store:<8} - ${price:>9}"
-        )
+    sorted_receipts = sorted(receipts, key=lambda receipt: receipt["date"])
+    for number, receipt in enumerate(sorted_receipts, start=1):
+        price = f"{receipt['total_paid']:.2f}"
+        date = receipt["date"]
+        store = receipt["store"].capitalize()
+        print(f"{number}: {date} - {store:<8} - ${price:>9}")
 
     while True:
         chose = cli.read_int(prompt=">>: ")
         if cli.value_in_options(chose, *range(1, len(receipts) + 1)):
-            return receipts[chose - 1]
+            return sorted_receipts[chose - 1]
         print("Enter a valid option.")
 
 
@@ -87,16 +87,8 @@ def delete_expense(info_by_category, all_info):
     Raises:
         Cancelled: If the user types a cancel word.
     """
-    delete = choose_receipt(
-        info_by_category, prompt="Enter the number of the data to delete: "
-    )
-    print(
-        ", ".join(
-            f"{k}: {v}"
-            for k, v in delete.items()
-            if k != "products" and k != "receipt_id"
-        )
-    )
+    delete = choose_receipt(info_by_category, prompt="Enter the number of the data to delete: ")
+    print(", ".join(f"{k}: {v}" for k, v in delete.items() if k != "products" and k != "receipt_id"))
     confirm = cli.yes_no_question("Delete this information?? (y/n): ")
     if confirm:
         for index, receipt in enumerate(all_info["receipts"]):
@@ -121,25 +113,28 @@ def _is_period_ok(start_date, end_date):
     """
     return start_date <= end_date
 
-def _current_dates_period(data):
-    dates = [receipt['date'] for receipt in data]
-    return min(dates),max(dates)
 
-def _print_receipt(receipt,receipt_number):
-    date = receipt['date']
-    store = receipt['store']
-    total_paid = receipt['total_paid']
-    notes = receipt['notes']
+def _current_dates_period(data):
+    dates = [receipt["date"] for receipt in data]
+    return (min(dates), max(dates)) if dates else (None, None)
+
+
+def _print_receipt(receipt, receipt_number):
+    date = receipt["date"]
+    store = receipt["store"]
+    total_paid = receipt["total_paid"]
+    notes = receipt["notes"]
     print(f"Receipt # {receipt_number}:")
     print(f"    Store: {store.capitalize()}\n    Date: {date}\n    Total paid: ${total_paid}\n    Notes: {notes}")
-    products = receipt['products']
+    products = receipt["products"]
     for product_number, prod in enumerate(products, start=1):
-        name = prod['product']
-        category = prod['category']
-        price = prod['unit_price']
-        paid = prod['paid_product']
+        name = prod["product"]
+        category = prod["category"]
+        price = prod["unit_price"]
+        paid = prod["paid_product"]
         print(f"    # {product_number} - Product: {name.capitalize()}")
         print(f"        Category: {category.capitalize()}\n        Unit_price: ${price}\n        Paid: ${paid}")
+
 
 def manage_expenses(data):
     """Run the Delete/Purchase-for-period submenu until the user goes back.
@@ -151,6 +146,7 @@ def manage_expenses(data):
         try:
             print("Menu:\n1. Delete\n2. Purchase for period\n3. Go back to main menu")
             option = cli.read_int("Chose an option from menu: ", min_value=1)
+
             if not cli.value_in_options(option, 1, 2, 3):
                 print("Enter a valid number.")
                 continue
@@ -160,11 +156,15 @@ def manage_expenses(data):
                 # modify to delete all receipt
                 info_by_filter = data_by_filter(data)
                 delete_expense(info_by_filter, data)
+
             elif option == 2:
                 print("\n--Purchase for period--")
+                min_date, max_date = _current_dates_period(data["receipts"])
+                if min_date is None:
+                    print("There are not receipts")
+                    continue
+                print(f"Your receipts go to {min_date} - {max_date}")
                 while True:
-                    min_date,max_date = _current_dates_period(data["receipts"])
-                    print(f"Your receipts go to {min_date} - {max_date}")
                     start_date = cli.add_valid_date(prompt="Enter the first date: ")
                     end_date = cli.add_valid_date(prompt="Enter the second date: ")
                     if _is_period_ok(start_date, end_date):
@@ -173,14 +173,15 @@ def manage_expenses(data):
                 by_period = queries.filter_by_period(data["receipts"], start_date, end_date)
                 if by_period:
                     print(f"\nIn this period you have {len(by_period)} receipts")
-                    for receipt_number,expense in (enumerate(by_period,start=1)):
-                        _print_receipt(expense,receipt_number)
+                    for receipt_number, expense in enumerate(by_period, start=1):
+                        _print_receipt(expense, receipt_number)
                         print()
                 else:
                     print("There are not receipts on that period.\n")
+
             else:
                 print()
                 break
-    
+
         except cli.Cancelled:
             print()
