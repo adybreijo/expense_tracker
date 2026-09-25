@@ -156,9 +156,7 @@ def value_in_options(value, *options):
         bool: True if value is an int (not bool) present in options; False
             otherwise (also prints a warning if any argument is not an int).
     """
-    if not all(
-        isinstance(x, int) and not isinstance(x, bool) for x in (*options, value)
-    ):
+    if not all(isinstance(x, int) and not isinstance(x, bool) for x in (*options, value)):
         print("All options must be integers")
         return False
     return value in options
@@ -192,9 +190,7 @@ def chose_from_list(options, prompt="Choose the number: ", default=None):
         print("Enter a valid option.")
 
 
-def add_valid_date(
-    prompt="Enter a date [DD-MM-YYYY]: ", default=None, allow_future=False
-):
+def add_valid_date(prompt="Enter a date [DD-MM-YYYY]: ", default=None, allow_future=False):
     """Prompt the user for a date and return it in ISO format.
     Args:
         prompt: Text shown to the user; if default is given, the default
