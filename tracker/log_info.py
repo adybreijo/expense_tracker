@@ -185,3 +185,6 @@ def manage_expenses(data):
 
         except cli.Cancelled:
             print()
+
+
+# delete by product

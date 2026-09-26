@@ -14,7 +14,7 @@ def main():
         data = {"receipts": []}
     while True:
         try:
-            print("Menu:\n1. Add (Enter new receipts, modify information...)")
+            print("\nMenu:\n1. Add (Enter new receipts, modify information...)")
             print("2. Log (View or delete your receipts)")
             print("3. Expenses (Show your expenses)")
             print("4. Quit")
@@ -34,7 +34,7 @@ def main():
             else:
                 print("Enter a valid option")
 
-        except cli.Cancelled:
+        except (cli.Cancelled, KeyboardInterrupt, EOFError):
             print("Program finished")
             break
 

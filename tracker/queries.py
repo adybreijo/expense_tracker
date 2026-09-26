@@ -60,11 +60,7 @@ def filter_pairs(pairs, field, info):
     Returns:
         list: The (receipt, item) tuples where the field equals info.
     """
-    return [
-        (receipt, item)
-        for receipt, item in pairs
-        if receipt.get(field, item.get(field)) == info
-    ]
+    return [(receipt, item) for receipt, item in pairs if receipt.get(field, item.get(field)) == info]
 
 
 def filter_by_period(receipts, start, end):
@@ -95,3 +91,12 @@ def generate_id(data, field):
             field, plus 1.
     """
     return max((receipt[field] for receipt in data), default=0) + 1
+
+
+"""If you ever need to fix it, the standard approach is a counter that only goes 
+up and is saved with the data. For example, add a "next_receipt_id" key at the 
+root of the JSON. Each new receipt reads it and then increments it, and deleting
+ a receipt never lowers it. Product ids would need the same thing per receipt
+  (a next_product_id inside each receipt). This changes your schema, though, 
+and today it wouldn't fix anything anyone can see.
+"""
