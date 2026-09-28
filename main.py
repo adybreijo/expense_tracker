@@ -25,7 +25,7 @@ def main():
                 if option == 1:
                     tracker.add_purchase_menu(data)
                 elif option == 2:
-                    tracker.manage_expenses(data)
+                    tracker.manage_expenses_menu(data)
                 elif option == 3:
                     tracker.expenses_by_filter(data)
                 else:

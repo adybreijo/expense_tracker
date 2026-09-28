@@ -196,6 +196,15 @@ def modify_product(product_info):
 
 
 def create_products_data(data, list_products=None):
+    """Ask for products one by one, with a chance to fix each, until the user stops or cancels.
+    New products are appended to list_products in place, so passing a receipt's
+    "products" list adds them directly to that receipt.
+    Args:
+        data: The full data dict, used to suggest previously used product names and categories.
+        list_products: List to append the new products to; a new list if None.
+    Returns:
+        list: list_products with the new products added (the ones saved before a cancel are kept).
+    """
     if list_products is None:
         list_products = []
     try:
@@ -304,6 +313,11 @@ def add_complete_purchase(data):
 
 
 def add_purchase_menu(data):
+    """Show the Add submenu and run the chosen option once.
+    A cancel word at this menu or inside an option returns to the main menu.
+    Args:
+        data: The full data dict ({"receipts": [...]}).
+    """
     try:
         print("\nMenu:\n1. Add complete receipt\n2. Add products to a receipt\n3. Go back to main menu")
         while True:
