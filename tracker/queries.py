@@ -72,7 +72,8 @@ def filter_by_period(receipts, start, end):
     Returns:
         list: The matching receipt dicts.
     """
-    return [expense for expense in receipts if start <= expense["date"] <= end]
+    receipt_period = [expense for expense in receipts if start <= expense["date"] <= end]
+    return sorted(receipt_period, key=lambda receipt: receipt["date"])
 
 
 def generate_id(data, field):

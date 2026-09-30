@@ -124,11 +124,21 @@ def delete_product(data, receipt_info):
         return
 
     product_name = one_product["product"]
+    last_product = len(receipt_info["products"]) == 1
+    if last_product:
+        print("This is the only product in this receipt; the receipt will be deleted too.")
     confirm = cli.yes_no_question(f"Do you want to delete {product_name.capitalize()} (y/n): ")
     if confirm:
-        receipt_info["products"].remove(one_product)
+        if last_product:
+            for index, receipt in enumerate(data["receipts"]):
+                if receipt["receipt_id"] == receipt_info["receipt_id"]:
+                    del data["receipts"][index]
+                    break
+            print(f"{product_name.capitalize()} and its receipt have been erased")
+        else:
+            receipt_info["products"].remove(one_product)
+            print(f"{product_name.capitalize()} and its data has been erased")
         storage.save_json(data)
-        print(f"{product_name.capitalize()} and its data has been erased")
     else:
         print("Action canceled by user")
 
@@ -147,16 +157,16 @@ def delete_complete_receipt(info_by_category, all_info):
     Raises:
         Cancelled: If the user types a cancel word.
     """
-    delete = choose_receipt(info_by_category, prompt="Enter the number of the data to delete: ")
-    print(", ".join(f"{k}: {v}" for k, v in delete.items() if k != "products" and k != "receipt_id"))
+    receipt_to_delete = choose_receipt(info_by_category, prompt="Enter the number of the data to delete: ")
+    print(", ".join(f"{k}: {v}" for k, v in receipt_to_delete.items() if k != "products" and k != "receipt_id"))
     confirm = cli.yes_no_question("Delete this information?? (y/n): ")
     if confirm:
         for index, receipt in enumerate(all_info["receipts"]):
-            if receipt["receipt_id"] == delete["receipt_id"]:
+            if receipt["receipt_id"] == receipt_to_delete["receipt_id"]:
                 del all_info["receipts"][index]
                 break
         storage.save_json(all_info)
-        print("Information deleted successfully")
+        print("Receipt deleted successfully")
     else:
         print("Operation canceled\n")
 
@@ -174,14 +184,14 @@ def _is_period_ok(start_date, end_date):
     return start_date <= end_date
 
 
-def _current_dates_period(data):
+def _current_dates_period(receipts):
     """Find the earliest and latest receipt dates.
     Args:
-        data: List of receipt dicts.
+        receipts: List of receipt dicts.
     Returns:
         tuple: (min_date, max_date) as ISO date strings, or (None, None) if the list is empty.
     """
-    dates = [receipt["date"] for receipt in data]
+    dates = [receipt["date"] for receipt in receipts]
     return (min(dates), max(dates)) if dates else (None, None)
 
 
@@ -196,15 +206,15 @@ def _print_receipt(receipt, receipt_number):
     total_paid = receipt["total_paid"]
     notes = receipt["notes"]
     print(f"Receipt # {receipt_number}:")
-    print(f"    Store: {store.capitalize()}\n    Date: {date}\n    Total paid: ${total_paid}\n    Notes: {notes}")
-    products = receipt["products"]
+    print(f"    Store: {store.capitalize()}\n    Date: {date}\n    Total paid: ${total_paid:.2f}\n    Notes: {notes}")
+    products = sorted(receipt["products"], key=lambda prod: prod["product"])
     for product_number, prod in enumerate(products, start=1):
         name = prod["product"]
         category = prod["category"]
         price = prod["unit_price"]
         paid = prod["paid_product"]
         print(f"    # {product_number} - Product: {name.capitalize()}")
-        print(f"        Category: {category.capitalize()}\n        Unit_price: ${price}\n        Paid: ${paid}")
+        print(f"        Category: {category.capitalize()}\n        Unit_price: ${price:.2f}\n        Paid: ${paid:.2f}")
 
 
 def delete_data_menu(data):
@@ -223,9 +233,13 @@ def delete_data_menu(data):
             continue
         if option == 1:
             print("--Delete complete receipt--")
+            if not data["receipts"]:
+                print("There are not receipts to delete.")
+                return
             info_by_filter = data_by_filter(data)
             delete_complete_receipt(info_by_filter, data)
         elif option == 2:
+            print("--Delete a product--")
             receipt = choose_receipt(data["receipts"])
             if receipt is None:
                 return
