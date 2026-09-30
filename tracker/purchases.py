@@ -111,7 +111,7 @@ def modify_fixed_data(fixed_data_info):
     )
 
     while True:
-        print(f"Fields saved: \nDate: {date}\nStore: {store}\nTotal paid: ${total_paid}\nNotes: {notes}\n")
+        print(f"Fields saved: \nDate: {date}\nStore: {store}\nTotal paid: ${total_paid:.2f}\nNotes: {notes}\n")
         field = cli.chose_from_list(("Date", "Store", "Total paid", "Notes"), "Which field you want to modify: ")
 
         if field == "Date":
@@ -122,10 +122,10 @@ def modify_fixed_data(fixed_data_info):
             total_paid = cli.read_float(("Enter the new total paid: "), min_value=0.01, default=total_paid)
         else:
             notes = cli.check_cancel(input("Enter the new notes: ")).strip() or notes
-        exit = cli.yes_no_question("Fix another field (y/n): ")
+        fix_another = cli.yes_no_question("Fix another field (y/n): ")
 
-        if not exit:
-            print(f"\nFinal data: \nDate: {date}\nStore: {store}\nTotal paid: ${total_paid}\nNotes: {notes}")
+        if not fix_another:
+            print(f"\nFinal data: \nDate: {date}\nStore: {store}\nTotal paid: ${total_paid:.2f}\nNotes: {notes}")
             break
     return date, store, total_paid, notes
 
@@ -158,7 +158,7 @@ def modify_product(product_info):
 
     while True:
         print(
-            f"Fields saved: \nProduct: {product.capitalize()}\nCategory: {category.capitalize()}\nUnit price: ${unit_price}\nPaid: ${paid_product}"
+            f"Fields saved: \nProduct: {product.capitalize()}\nCategory: {category.capitalize()}\nUnit price: ${unit_price:.2f}\nPaid: ${paid_product:.2f}"
         )
         field = cli.chose_from_list(
             ("Product", "Category", "Unit price", "Paid"),
@@ -180,10 +180,10 @@ def modify_product(product_info):
                 default=paid_product,
             )
 
-        exit = cli.yes_no_question("Fix another field (y/n): ")
-        if not exit:
+        fix_another = cli.yes_no_question("Fix another field (y/n): ")
+        if not fix_another:
             print(
-                f"\nFinal data: \nProduct: {product.capitalize()}\nCategory: {category.capitalize()}\nUnit price: ${unit_price}\nPaid: ${paid_product}"
+                f"\nFinal data: \nProduct: {product.capitalize()}\nCategory: {category.capitalize()}\nUnit price: ${unit_price:.2f}\nPaid: ${paid_product:.2f}"
             )
             break
 

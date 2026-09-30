@@ -20,9 +20,9 @@ def load_json(default, path=JSON_DATA):
     try:
         with open(path, "r", encoding="utf-8") as file:
             return json.load(file)
-    except json.JSONDecodeError as error:
-        backup_path = path + '.bak'
-        os.replace(path,backup_path)
+    except (json.JSONDecodeError, UnicodeDecodeError) as error:
+        backup_path = path + ".bak"
+        os.replace(path, backup_path)
         print(f"Warning: {path} contains invalid JSON ({error})")
         print(f"The original was moved to {backup_path}. Starting empty.")
         return default
@@ -39,4 +39,3 @@ def save_json(data, path=JSON_DATA):
     with open(temp_path, "w", encoding="utf-8") as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
     os.replace(temp_path, path)
-
