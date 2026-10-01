@@ -8,10 +8,11 @@ def main():
     Repeatedly shows the Add/Log/Expenses/Quit menu and dispatches to the
     matching tracker function until the user selects Quit or cancels.
     """
-    data = storage.load_json({"receipts": []})
-    if not isinstance(data, dict) or "receipts" not in data:
-        print("Warning: expenses.json doesn't match the expected format, starting empty.")
-        data = {"receipts": []}
+    data = storage.load_json({"receipts": [], "catalog": {}})
+    if not isinstance(data, dict) or not all(key in data for key in ("receipts", "catalog")):
+        print("Error: expenses.json doesn't match the expected format.")
+        print("Fix or move the file and run the program again. Nothing was changed.")
+        return
     while True:
         try:
             print("\nMenu:\n1. Add (Enter new receipts, modify information...)")
