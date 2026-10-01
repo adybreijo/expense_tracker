@@ -9,7 +9,7 @@ def data_by_filter(data):
     Filters by store, exact date, product or category. Loops until at least
     one matching receipt is found.
     Args:
-        data: The full data dict ({"receipts": [...]}).
+        data: The full data dict ({"receipts": [...], "catalog": {...}}).
     Returns:
         list: The receipt dicts matching the chosen filter and value, each listed once.
     """
@@ -220,7 +220,7 @@ def _print_receipt(receipt, receipt_number):
 def delete_data_menu(data):
     """Ask whether to delete a complete receipt or one product, and run that option.
     Args:
-        data: The full data dict ({"receipts": [...]}).
+        data: The full data dict ({"receipts": [...], "catalog": {...}}).
     Raises:
         Cancelled: If the user types a cancel word.
     """
@@ -250,7 +250,7 @@ def delete_data_menu(data):
 def purchase_for_period(data):
     """Ask for a date range and print every receipt inside it.
     Args:
-        data: The full data dict ({"receipts": [...]}).
+        data: The full data dict ({"receipts": [...], "catalog": {...}}).
     Raises:
         Cancelled: If the user types a cancel word.
     """
@@ -282,7 +282,7 @@ def manage_expenses_menu(data):
     A cancel word at this menu returns to the main menu; a cancel word
     inside an option returns to this menu.
     Args:
-        data: The full data dict ({"receipts": [...]}).
+        data: The full data dict ({"receipts": [...], "catalog": {...}}).
     """
 
     while True:

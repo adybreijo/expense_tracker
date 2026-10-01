@@ -94,10 +94,31 @@ def generate_id(data, field):
     return max((receipt[field] for receipt in data), default=0) + 1
 
 
-"""If you ever need to fix it, the standard approach is a counter that only goes 
-up and is saved with the data. For example, add a "next_receipt_id" key at the 
-root of the JSON. Each new receipt reads it and then increments it, and deleting
- a receipt never lowers it. Product ids would need the same thing per receipt
-  (a next_product_id inside each receipt). This changes your schema, though, 
-and today it wouldn't fix anything anyone can see.
-"""
+def get_category(data_categories, product):
+    """Look up the category saved for a product.
+    Args:
+        data_categories: The catalog dict ({product: category}).
+        product: The product name to look up.
+    Returns:
+        str: The product's category, or None if it isn't in the catalog.
+    """
+    return data_categories.get(product)
+
+
+def update_category(products, product, new_category):
+    """Set a product's category on every line where it differs.
+    Edits the product dicts in place.
+    Args:
+        products: List of product dicts (live references, e.g. from
+            only_products()).
+        product: Name of the product to recategorize.
+        new_category: Category to set.
+    Returns:
+        int: How many lines were changed.
+    """
+    changed = 0
+    for item in products:
+        if item["product"] == product and item["category"] != new_category:
+            item["category"] = new_category
+            changed += 1
+    return changed

@@ -38,13 +38,31 @@ def add_data(previous_data, prompt, field, default=None):
     return choice
 
 
-def add_product_fields(known_products):
+def category_name(category_data, product):
+    """Return the catalog category of a product, or ask for one if it's new.
+    Args:
+        category_data: The catalog dict ({product: category}).
+        product: The product name to look up.
+    Returns:
+        str: The category saved in the catalog, or the one the user types.
+    Raises:
+        Cancelled: If the user types a cancel word.
+    """
+    categ = queries.get_category(category_data, product)
+    if categ is None:
+        return cli.valid_string("Enter the name for the new category: ")
+    return categ
+
+
+def add_product_fields(data, known_products):
     """Prompt for the fields of a new product line.
 
     Args:
+        data: The full data dict; its "catalog" gives the category of a
+            known product, so it is only asked for new products.
         known_products: List of product dicts (already saved, plus any
             added earlier in the current session) used to suggest
-            previously used product names and categories.
+            previously used product names.
 
     Returns:
         dict: The product with "product", "category", "unit_price" and
@@ -55,7 +73,7 @@ def add_product_fields(known_products):
     """
     product = add_data(known_products, "Product: ", "product")
     print()
-    category = add_data(known_products, "Category: ", "category")
+    category = category_name(data["catalog"], product)
     print()
     unit_price = cli.read_float("Product price: ", min_value=0.01)
     print()
@@ -200,7 +218,10 @@ def create_products_data(data, list_products=None):
     New products are appended to list_products in place, so passing a receipt's
     "products" list adds them directly to that receipt.
     Args:
-        data: The full data dict, used to suggest previously used product names and categories.
+        data: The full data dict ({"receipts": [...], "catalog": {...}}). Used to
+            suggest previously used product names and categories. Its catalog
+            gets each new product, and changing a known product's category
+            updates every saved line with that product.
         list_products: List to append the new products to; a new list if None.
     Returns:
         list: list_products with the new products added (the ones saved before a cancel are kept).
@@ -211,7 +232,7 @@ def create_products_data(data, list_products=None):
         while True:
             print(f"\nProducts so far: {len(list_products)}")
             known_products = queries.only_products(data) + list_products
-            new_expense = add_product_fields(known_products)
+            new_expense = add_product_fields(data, known_products)
             while True:
                 action = cli.yes_no_question("Fix product info (y/n): ")
                 if action:
@@ -219,6 +240,19 @@ def create_products_data(data, list_products=None):
                     new_expense = modify_product(new_expense)
                 else:
                     break
+            product = new_expense["product"]
+            category = new_expense["category"]
+            old_category = data["catalog"].get(product)
+            if old_category is not None and old_category != category:
+                print(f"{product.capitalize()} is saved as {old_category.capitalize()}.")
+                recategorize = cli.yes_no_question(f"Change it to {category.capitalize()} in every receipt (y/n): ")
+                if recategorize:
+                    all_lines = queries.only_products(data) + list_products
+                    changed = queries.update_category(all_lines, product, category)
+                    print(f"{changed} line(s) updated.")
+                else:
+                    new_expense["category"] = old_category
+            data["catalog"][product] = new_expense["category"]
             new_expense["product_id"] = queries.generate_id(list_products, "product_id")
             list_products.append(new_expense)
             print(f" -- {new_expense['product'].capitalize()}  -{new_expense['category']} -${new_expense['paid_product']:.2f}")
@@ -233,7 +267,7 @@ def create_products_data(data, list_products=None):
 def add_product_incomplete_receipt(data):
     """Let the user pick an existing receipt and add more products to it.
     Args:
-        data: The full data dict ({"receipts": [...]}); the chosen receipt is updated in place and the result is saved to disk.
+        data: The full data dict ({"receipts": [...], "catalog": {...}}); the chosen receipt is updated in place and the result is saved to disk.
     Raises:
         Cancelled: If the user types a cancel word while choosing the receipt.
     """
@@ -268,7 +302,7 @@ def add_complete_purchase(data):
     it.
 
     Args:
-        data: The full data dict ({"receipts": [...]}); the new receipt is
+        data: The full data dict ({"receipts": [...], "catalog": {...}}); the new receipt is
             appended to it and the result is saved to disk.
     """
     print("-- Add new expenses to your list or purchases --")
@@ -316,7 +350,7 @@ def add_purchase_menu(data):
     """Show the Add submenu and run the chosen option once.
     A cancel word at this menu or inside an option returns to the main menu.
     Args:
-        data: The full data dict ({"receipts": [...]}).
+        data: The full data dict ({"receipts": [...], "catalog": {...}}).
     """
     try:
         print("\nMenu:\n1. Add complete receipt\n2. Add products to a receipt\n3. Go back to main menu")
