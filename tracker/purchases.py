@@ -40,18 +40,29 @@ def add_data(previous_data, prompt, field, default=None):
 
 def category_name(category_data, product):
     """Return the catalog category of a product, or ask for one if it's new.
+    For a new product, offers the categories already in the catalog
+    plus "New entrance" to type a new one.
     Args:
         category_data: The catalog dict ({product: category}).
         product: The product name to look up.
     Returns:
-        str: The category saved in the catalog, or the one the user types.
+        str: The category saved in the catalog, or the one the user picks or types.
     Raises:
         Cancelled: If the user types a cancel word.
     """
     categ = queries.get_category(category_data, product)
-    if categ is None:
+    if categ is not None:
+        return categ
+
+    categories = queries.category_names(category_data)
+    if not categories:
         return cli.valid_string("Enter the name for the new category: ")
-    return categ
+
+    options = ["New entrance"] + categories
+    choice = cli.chose_from_list(options, prompt="Chose a category: ")
+    if choice == "New entrance":
+        return cli.valid_string("Enter the name for the new category: ")
+    return choice
 
 
 def add_product_fields(data, known_products):
@@ -180,7 +191,7 @@ def modify_product(product_info):
         )
         field = cli.chose_from_list(
             ("Product", "Category", "Unit price", "Paid"),
-            "Which field you want to modify",
+            "Which field you want to modify: ",
         )
         if field == "Product":
             product = cli.valid_string("Enter the new product name: ", default=product)
@@ -306,7 +317,7 @@ def add_complete_purchase(data):
             appended to it and the result is saved to disk.
     """
     print("-- Add new expenses to your list or purchases --")
-    print(f" [Type: *{', '.join(cli.CANCEL_WORDS)}'* at any time to cancel and return to the menu.]\n")
+    print(f" [Type: *{', '.join(cli.CANCEL_WORDS)}* at any time to cancel and return to the menu.]\n")
     print("Please enter your purchase information as follows:")
     products = []
 
