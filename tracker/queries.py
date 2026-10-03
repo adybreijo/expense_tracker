@@ -105,6 +105,24 @@ def get_category(data_categories, product):
     return data_categories.get(product)
 
 
+def category_names(data_categories):
+    """Collect the distinct categories saved in the catalog.
+    Comparison is case-insensitive; the first-seen casing is kept.
+    Args:
+        data_categories: The catalog dict ({product: category}).
+    Returns:
+        list: Distinct categories, sorted alphabetically
+            (case-insensitive, empty list if none).
+    """
+    seen = []
+    seen_lower = set()
+    for category in data_categories.values():
+        if category.lower() not in seen_lower:
+            seen.append(category)
+            seen_lower.add(category.lower())
+    return sorted(seen, key=str.lower)
+
+
 def update_category(products, product, new_category):
     """Set a product's category on every line where it differs.
     Edits the product dicts in place.
