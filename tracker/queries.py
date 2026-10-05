@@ -94,6 +94,20 @@ def generate_id(data, field):
     return max((receipt[field] for receipt in data), default=0) + 1
 
 
+def next_receipt_id(data):
+    """Hand out the next receipt id and advance the saved counter.
+    Unlike generate_id, ids are never reused, even after deleting the
+    newest receipt.
+    Args:
+        data: The full data dict; its "next_receipt_id" is incremented.
+    Returns:
+        int: The id to use for the new receipt.
+    """
+    receipt_id = data["next_receipt_id"]
+    data["next_receipt_id"] += 1
+    return receipt_id
+
+
 def get_category(data_categories, product):
     """Look up the category saved for a product.
     Args:

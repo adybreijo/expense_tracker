@@ -172,7 +172,7 @@ def chose_from_list(options, prompt="Choose the number: ", default=None):
         default: Item to return if the user presses Enter without typing
             anything; must be present in options to take effect.
     Returns:
-        The selected item from options.
+        The selected item from options, or None if options is empty.
     Raises:
         Cancelled: If the user types a cancel word.
     """
@@ -180,6 +180,8 @@ def chose_from_list(options, prompt="Choose the number: ", default=None):
         print(prompt)
         for number, name in enumerate(options, start=1):
             print(f"{number}: {name.capitalize()}")
+    else:
+        return None
 
     default_index = options.index(default) + 1 if default in options else None
 
@@ -207,7 +209,7 @@ def add_valid_date(prompt="Enter a date [DD-MM-YYYY]: ", default=None, allow_fut
         if isinstance(default, str):
             default = date.fromisoformat(default)
         default = dates.parse_date(default, allow_future)
-        prompt = f"{prompt.rstrip()} [{default.isoformat()}]: "
+        prompt = f"{prompt.rstrip()} [{default.strftime('%d-%m-%Y')}]: "
 
     while True:
         entry = check_cancel(input(prompt)).strip()

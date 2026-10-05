@@ -229,7 +229,7 @@ def create_products_data(data, list_products=None):
     New products are appended to list_products in place, so passing a receipt's
     "products" list adds them directly to that receipt.
     Args:
-        data: The full data dict ({"receipts": [...], "catalog": {...}}). Used to
+        data: The full data dict ({"receipts": [], "catalog": {}, "next_receipt_id": 1}). Used to
             suggest previously used product names and categories. Its catalog
             gets each new product, and changing a known product's category
             updates every saved line with that product.
@@ -278,7 +278,7 @@ def create_products_data(data, list_products=None):
 def add_product_incomplete_receipt(data):
     """Let the user pick an existing receipt and add more products to it.
     Args:
-        data: The full data dict ({"receipts": [...], "catalog": {...}}); the chosen receipt is updated in place and the result is saved to disk.
+        data: The full data dict ({"receipts": [], "catalog": {}, "next_receipt_id": 1}); the chosen receipt is updated in place and the result is saved to disk.
     Raises:
         Cancelled: If the user types a cancel word while choosing the receipt.
     """
@@ -313,7 +313,7 @@ def add_complete_purchase(data):
     it.
 
     Args:
-        data: The full data dict ({"receipts": [...], "catalog": {...}}); the new receipt is
+        data: The full data dict ({"receipts": [], "catalog": {}, "next_receipt_id": 1}); the new receipt is
             appended to it and the result is saved to disk.
     """
     print("-- Add new expenses to your list or purchases --")
@@ -322,7 +322,6 @@ def add_complete_purchase(data):
     products = []
 
     try:
-        receipt_id = queries.generate_id(data["receipts"], "receipt_id")
         date, store, total_paid, notes = ask_fixed_data(data["receipts"])
         print()
         modify = cli.chose_from_list(("Add product", "Modify data"), "Next step: ")
@@ -344,7 +343,7 @@ def add_complete_purchase(data):
         print("Nothing was added")
         return
     receipt = {
-        "receipt_id": receipt_id,
+        "receipt_id": queries.next_receipt_id(data),
         "date": date,
         "store": store,
         "total_paid": total_paid,
@@ -361,7 +360,7 @@ def add_purchase_menu(data):
     """Show the Add submenu and run the chosen option once.
     A cancel word at this menu or inside an option returns to the main menu.
     Args:
-        data: The full data dict ({"receipts": [...], "catalog": {...}}).
+        data: The full data dict ({"receipts": [], "catalog": {}, "next_receipt_id": 1}).
     """
     try:
         print("\nMenu:\n1. Add complete receipt\n2. Add products to a receipt\n3. Go back to main menu")
