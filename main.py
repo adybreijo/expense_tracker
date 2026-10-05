@@ -1,6 +1,7 @@
 import cli
 import storage
 import tracker
+from tracker import queries
 
 
 def main():
@@ -8,11 +9,13 @@ def main():
     Repeatedly shows the Add/Log/Expenses/Quit menu and dispatches to the
     matching tracker function until the user selects Quit or cancels.
     """
-    data = storage.load_json({"receipts": [], "catalog": {}})
+    data = storage.load_json({"receipts": [], "catalog": {}, "next_receipt_id": 1})
     if not isinstance(data, dict) or not all(key in data for key in ("receipts", "catalog")):
         print("Error: expenses.json doesn't match the expected format.")
         print("Fix or move the file and run the program again. Nothing was changed.")
         return
+    if "next_receipt_id" not in data:
+        data["next_receipt_id"] = queries.generate_id(data["receipts"], "receipt_id")
     while True:
         try:
             print("\nMenu:\n1. Add (Enter new receipts, modify information...)")

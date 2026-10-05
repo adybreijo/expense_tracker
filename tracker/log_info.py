@@ -9,7 +9,7 @@ def data_by_filter(data):
     Filters by store, exact date, product or category. Loops until at least
     one matching receipt is found.
     Args:
-        data: The full data dict ({"receipts": [...], "catalog": {...}}).
+        data: The full data dict ({"receipts": [], "catalog": {}, "next_receipt_id": 1}).
     Returns:
         list: The receipt dicts matching the chosen filter and value, each listed once.
     """
@@ -220,7 +220,7 @@ def _print_receipt(receipt, receipt_number):
 def delete_data_menu(data):
     """Ask whether to delete a complete receipt or one product, and run that option.
     Args:
-        data: The full data dict ({"receipts": [...], "catalog": {...}}).
+        data: The full data dict ({"receipts": [], "catalog": {}, "next_receipt_id": 1}).
     Raises:
         Cancelled: If the user types a cancel word.
     """
@@ -250,7 +250,7 @@ def delete_data_menu(data):
 def purchase_for_period(data):
     """Ask for a date range and print every receipt inside it.
     Args:
-        data: The full data dict ({"receipts": [...], "catalog": {...}}).
+        data: The full data dict ({"receipts": [], "catalog": {}, "next_receipt_id": 1}).
     Raises:
         Cancelled: If the user types a cancel word.
     """
@@ -265,7 +265,7 @@ def purchase_for_period(data):
         end_date = cli.add_valid_date(prompt="Enter the second date: ")
         if _is_period_ok(start_date, end_date):
             break
-        print("Enter a start date lower than a second date")
+        print("The start date must be on or before the end date, try again...")
     by_period = queries.filter_by_period(data["receipts"], start_date, end_date)
     if by_period:
         print(f"\nIn this period you have {len(by_period)} receipts")
@@ -282,7 +282,7 @@ def manage_expenses_menu(data):
     A cancel word at this menu returns to the main menu; a cancel word
     inside an option returns to this menu.
     Args:
-        data: The full data dict ({"receipts": [...], "catalog": {...}}).
+        data: The full data dict ({"receipts": [], "catalog": {}, "next_receipt_id": 1}).
     """
 
     while True:
