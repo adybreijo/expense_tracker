@@ -242,7 +242,7 @@ def create_products_data(data, list_products=None):
     try:
         while True:
             print(f"\nProducts so far: {len(list_products)}")
-            known_products = queries.only_products(data) + list_products
+            known_products = queries.only_products(data["receipts"]) + list_products
             new_expense = add_product_fields(data, known_products)
             while True:
                 action = cli.yes_no_question("Fix product info (y/n): ")
@@ -258,7 +258,7 @@ def create_products_data(data, list_products=None):
                 print(f"{product.capitalize()} is saved as {old_category.capitalize()}.")
                 recategorize = cli.yes_no_question(f"Change it to {category.capitalize()} in every receipt (y/n): ")
                 if recategorize:
-                    all_lines = queries.only_products(data) + list_products
+                    all_lines = queries.only_products(data["receipts"]) + list_products
                     changed = queries.update_category(all_lines, product, category)
                     print(f"{changed} line(s) updated.")
                 else:
@@ -363,13 +363,9 @@ def add_purchase_menu(data):
         data: The full data dict ({"receipts": [], "catalog": {}, "next_receipt_id": 1}).
     """
     try:
-        print("\nMenu:\n1. Add complete receipt\n2. Add products to a receipt\n3. Go back to main menu")
-        while True:
-            user_input = cli.read_int(prompt=">>: ")
-            choice = cli.value_in_options(user_input, 1, 2, 3)
-            if choice:
-                break
-            print("Enter a valid option")
+        user_input = cli.valid_option(
+            "\nMenu:\n1. Add complete receipt\n2. Add products to a receipt\n3. Go back to main menu\n>>: ", 1, 2, 3
+        )
         if user_input == 1:
             print("--Add complete receipt--")
             add_complete_purchase(data)

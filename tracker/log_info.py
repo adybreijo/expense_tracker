@@ -4,41 +4,29 @@ import storage
 from . import queries
 
 
-def data_by_filter(data):
+def data_by_filter(receipts):
     """Ask the user for a filter and value, and return the matching receipts.
     Filters by store, exact date, product or category. Loops until at least
     one matching receipt is found.
     Args:
-        data: The full data dict ({"receipts": [], "catalog": {}, "next_receipt_id": 1}).
+        receipts: List of receipt dicts.
     Returns:
         list: The receipt dicts matching the chosen filter and value, each listed once.
     """
     print("Enter the filter you want to search for: ")
-    stores = queries.fields_names(data["receipts"], "store")
-    products = queries.fields_names(queries.only_products(data), "product")
-    categories = queries.fields_names(queries.only_products(data), "category")
-    values_by_field = {"store": stores, "product": products, "category": categories}
-
     while True:
         filter_user = cli.chose_from_list(("store", "date", "product", "category"), "Chose filter: ")
 
         if filter_user == "date":
             value = cli.add_valid_date()
         else:
-            options = values_by_field[filter_user]
+            options = queries.values_for_field(receipts, filter_user)
             if not options:
                 print(f"No {filter_user} recorded yet.")
                 continue
             value = cli.chose_from_list(options, f"Choose {filter_user}: ")
 
-        pairs = queries.filter_pairs(queries.receipt_product(data), filter_user, value)
-        results = []
-        seen_ids = set()
-
-        for receipt, _ in pairs:
-            if receipt["receipt_id"] not in seen_ids:
-                results.append(receipt)
-                seen_ids.add(receipt["receipt_id"])
+        results = queries.receipts_by_field(receipts, filter_user, value)
         if not results:
             print(f"No expenses found for that {filter_user}.")
             continue
@@ -171,30 +159,6 @@ def delete_complete_receipt(info_by_category, all_info):
         print("Operation canceled\n")
 
 
-def _is_period_ok(start_date, end_date):
-    """Check that a date range is valid (start on or before end).
-
-    Args:
-        start_date: Start of the period, as an ISO date string.
-        end_date: End of the period, as an ISO date string.
-
-    Returns:
-        bool: True if start_date <= end_date.
-    """
-    return start_date <= end_date
-
-
-def _current_dates_period(receipts):
-    """Find the earliest and latest receipt dates.
-    Args:
-        receipts: List of receipt dicts.
-    Returns:
-        tuple: (min_date, max_date) as ISO date strings, or (None, None) if the list is empty.
-    """
-    dates = [receipt["date"] for receipt in receipts]
-    return (min(dates), max(dates)) if dates else (None, None)
-
-
 def _print_receipt(receipt, receipt_number):
     """Print a receipt's fields followed by each of its products.
     Args:
@@ -225,48 +189,53 @@ def delete_data_menu(data):
         Cancelled: If the user types a cancel word.
     """
     print("\n--Delete information--")
-    while True:
-        print(f"\nMenu:\n1. Delete complete receipt\n2. Delete a product info from a receipt")
-        option = cli.read_int("Chose an option from menu: ", min_value=1)
-        if not cli.value_in_options(option, 1, 2):
-            print("Enter a valid number.")
-            continue
-        if option == 1:
-            print("--Delete complete receipt--")
-            if not data["receipts"]:
-                print("There are not receipts to delete.")
-                return
-            info_by_filter = data_by_filter(data)
-            delete_complete_receipt(info_by_filter, data)
-        elif option == 2:
-            print("--Delete a product--")
-            receipt = choose_receipt(data["receipts"])
-            if receipt is None:
-                return
-            delete_product(data, receipt)
-        return
+    option = cli.valid_option("\nMenu:\n1. Delete complete receipt\n2. Delete a product info from a receipt.\n>>: ", 1, 2)
+    if option == 1:
+        print("--Delete complete receipt--")
+        if not data["receipts"]:
+            print("There are not receipts to delete.")
+            return
+        info_by_filter = data_by_filter(data["receipts"])
+        delete_complete_receipt(info_by_filter, data)
+    elif option == 2:
+        print("--Delete a product--")
+        receipt = choose_receipt(data["receipts"])
+        if receipt is None:
+            return
+        delete_product(data, receipt)
 
 
 def purchase_for_period(data):
+    """Ask for a date range and return the receipts inside it.
+    Args:
+        data: The full data dict ({"receipts": [], "catalog": {}, "next_receipt_id": 1}).
+    Returns:
+        list: The receipt dicts in the range, sorted by date, or [] if there are no receipts.
+    Raises:
+        Cancelled: If the user types a cancel word.
+    """
+    print("\n--Purchase for period--")
+    min_date, max_date = queries.current_dates_period(data["receipts"])
+    if min_date is None:
+        return []
+    print(f"Your receipts go to {min_date} - {max_date}")
+    while True:
+        start_date = cli.add_valid_date(prompt="Enter the first date: ")
+        end_date = cli.add_valid_date(prompt="Enter the second date: ")
+        if queries.is_period_ok(start_date, end_date):
+            break
+        print("The start date must be on or before the end date, try again...")
+    return queries.filter_by_period(data["receipts"], start_date, end_date)
+
+
+def show_purchase_for_period(data):
     """Ask for a date range and print every receipt inside it.
     Args:
         data: The full data dict ({"receipts": [], "catalog": {}, "next_receipt_id": 1}).
     Raises:
         Cancelled: If the user types a cancel word.
     """
-    print("\n--Purchase for period--")
-    min_date, max_date = _current_dates_period(data["receipts"])
-    if min_date is None:
-        print("There are not receipts")
-        return
-    print(f"Your receipts go to {min_date} - {max_date}")
-    while True:
-        start_date = cli.add_valid_date(prompt="Enter the first date: ")
-        end_date = cli.add_valid_date(prompt="Enter the second date: ")
-        if _is_period_ok(start_date, end_date):
-            break
-        print("The start date must be on or before the end date, try again...")
-    by_period = queries.filter_by_period(data["receipts"], start_date, end_date)
+    by_period = purchase_for_period(data)
     if by_period:
         print(f"\nIn this period you have {len(by_period)} receipts")
         for receipt_number, expense in enumerate(by_period, start=1):
@@ -288,22 +257,15 @@ def manage_expenses_menu(data):
     while True:
         print("Menu:\n1. Delete\n2. Purchase for period\n3. Go back to main menu")
         try:
-            option = cli.read_int("Chose an option from menu: ", min_value=1)
+            option = cli.valid_option("Chose an option from menu: ", 1, 2, 3)
         except cli.Cancelled:
             print()
             return
-
-        if not cli.value_in_options(option, 1, 2, 3):
-            print("Enter a valid number.")
-            continue
         try:
-
             if option == 1:
                 delete_data_menu(data)
-
             elif option == 2:
-                purchase_for_period(data)
-
+                show_purchase_for_period(data)
             else:
                 print()
                 break
