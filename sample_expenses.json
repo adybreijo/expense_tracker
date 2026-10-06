@@ -1,0 +1,72 @@
+{
+    "receipts": [
+        {
+            "receipt_id": 1,
+            "date": "2026-08-02",
+            "store": "walmart",
+            "total_paid": 278.55,
+            "notes": "weekly shopping",
+            "products": [
+                {"product": "chicken", "category": "meat", "unit_price": 119.0, "paid_product": 95.2, "product_id": 1},
+                {"product": "milk", "category": "dairy", "unit_price": 28.5, "paid_product": 57.0, "product_id": 2},
+                {"product": "milk", "category": "dairy", "unit_price": 28.5, "paid_product": 57.0, "product_id": 3},
+                {"product": "banana", "category": "fruit", "unit_price": 24.9, "paid_product": 37.35, "product_id": 4},
+                {"product": "rice", "category": "grains", "unit_price": 32.0, "paid_product": 32.0, "product_id": 5}
+            ]
+        },
+        {
+            "receipt_id": 2,
+            "date": "2026-08-16",
+            "store": "market",
+            "total_paid": 96.0,
+            "notes": "",
+            "products": [
+                {"product": "banana", "category": "fruit", "unit_price": 20.0, "paid_product": 30.0, "product_id": 1},
+                {"product": "tomato", "category": "vegetables", "unit_price": 34.0, "paid_product": 25.5, "product_id": 2},
+                {"product": "potato", "category": "vegetables", "unit_price": 30.0, "paid_product": 22.5, "product_id": 3},
+                {"product": "lime", "category": "fruit", "unit_price": 36.0, "paid_product": 18.0, "product_id": 4}
+            ]
+        },
+        {
+            "receipt_id": 3,
+            "date": "2026-09-06",
+            "store": "soriana",
+            "total_paid": 361.6,
+            "notes": "",
+            "products": [
+                {"product": "chicken", "category": "meat", "unit_price": 129.0, "paid_product": 103.2, "product_id": 1},
+                {"product": "shampoo", "category": "personal care", "unit_price": 79.9, "paid_product": 79.9, "product_id": 2},
+                {"product": "rice", "category": "grains", "unit_price": 33.5, "paid_product": 33.5, "product_id": 3},
+                {"product": "coffee", "category": "drinks", "unit_price": 145.0, "paid_product": 145.0, "product_id": 4}
+            ]
+        },
+        {
+            "receipt_id": 4,
+            "date": "2026-09-20",
+            "store": "walmart",
+            "total_paid": 588.2,
+            "notes": "birthday",
+            "products": [
+                {"product": "chicken", "category": "meat", "unit_price": 124.0, "paid_product": 99.2, "product_id": 1},
+                {"product": "milk", "category": "dairy", "unit_price": 29.0, "paid_product": 58.0, "product_id": 2},
+                {"product": "cake", "category": "sweets", "unit_price": 320.0, "paid_product": 320.0, "product_id": 3},
+                {"product": "soda", "category": "drinks", "unit_price": 42.0, "paid_product": 84.0, "product_id": 4},
+                {"product": "tomato", "category": "vegetables", "unit_price": 36.0, "paid_product": 27.0, "product_id": 5}
+            ]
+        }
+    ],
+    "catalog": {
+        "chicken": "meat",
+        "milk": "dairy",
+        "banana": "fruit",
+        "rice": "grains",
+        "tomato": "vegetables",
+        "potato": "vegetables",
+        "lime": "fruit",
+        "shampoo": "personal care",
+        "coffee": "drinks",
+        "cake": "sweets",
+        "soda": "drinks"
+    },
+    "next_receipt_id": 5
+}
