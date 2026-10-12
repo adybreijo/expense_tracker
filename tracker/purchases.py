@@ -286,6 +286,9 @@ def add_product_incomplete_receipt(data):
     if receipt is None:
         return
 
+    print("\nProducts in this receipt:")
+    log_info.print_products(receipt["products"])
+
     products_before = len(receipt["products"])
     create_products_data(data, receipt["products"])
     added = len(receipt["products"]) - products_before
