@@ -83,11 +83,8 @@ def add_product_fields(data, known_products):
         Cancelled: If the user types a cancel word.
     """
     product = add_data(known_products, "Product: ", "product")
-    print()
     category = category_name(data["catalog"], product)
-    print()
     unit_price = cli.read_float("Product price: ", min_value=0.01)
-    print()
     paid_product = cli.read_float("How much you paid: ", min_value=0.01)
 
     return {
@@ -266,7 +263,9 @@ def create_products_data(data, list_products=None):
             data["catalog"][product] = new_expense["category"]
             new_expense["product_id"] = queries.generate_id(list_products, "product_id")
             list_products.append(new_expense)
-            print(f" -- {new_expense['product'].capitalize()}  -{new_expense['category']} -${new_expense['paid_product']:.2f}")
+            print(
+                f"\n -- {new_expense['product'].capitalize()}  -{new_expense['category']} -${new_expense['paid_product']:.2f}\n"
+            )
             new_product = cli.yes_no_question("Add more products (y/n): ")
             if not new_product:
                 break
@@ -296,7 +295,7 @@ def add_product_incomplete_receipt(data):
     store = receipt["store"]
     total_paid = receipt["total_paid"]
 
-    print(f"Receipt updated: {store.capitalize()}, {added} product(s) added, total: ${total_paid:.2f}\n\n")
+    print(f"\nReceipt updated: {store.capitalize()}, {added} product(s) added, total: ${total_paid:.2f}\n\n")
     storage.save_json(data)
 
 
@@ -352,7 +351,7 @@ def add_complete_purchase(data):
     }
 
     data["receipts"].append(receipt)
-    print(f"Receipt saved: {store.capitalize()}, {len(products)} product(s), total: ${total_paid:.2f}\n\n")
+    print(f"\nReceipt saved: {store.capitalize()}, {len(products)} product(s), total: ${total_paid:.2f}\n\n")
     storage.save_json(data)
 
 
