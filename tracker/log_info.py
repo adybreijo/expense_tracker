@@ -195,6 +195,21 @@ def _current_dates_period(receipts):
     return (min(dates), max(dates)) if dates else (None, None)
 
 
+def print_products(products):
+    """Print each product of a receipt, sorted by name.
+    Args:
+        products: The receipt's "products" list.
+    """
+    sorted_products = sorted(products, key=lambda prod: prod["product"])
+    for product_number, prod in enumerate(sorted_products, start=1):
+        name = prod["product"]
+        category = prod["category"]
+        price = prod["unit_price"]
+        paid = prod["paid_product"]
+        print(f"    # {product_number} - Product: {name.capitalize()}")
+        print(f"        Category: {category.capitalize()}\n        Unit_price: ${price:.2f}\n        Paid: ${paid:.2f}")
+
+
 def _print_receipt(receipt, receipt_number):
     """Print a receipt's fields followed by each of its products.
     Args:
@@ -207,14 +222,7 @@ def _print_receipt(receipt, receipt_number):
     notes = receipt["notes"]
     print(f"Receipt # {receipt_number}:")
     print(f"    Store: {store.capitalize()}\n    Date: {date}\n    Total paid: ${total_paid:.2f}\n    Notes: {notes}")
-    products = sorted(receipt["products"], key=lambda prod: prod["product"])
-    for product_number, prod in enumerate(products, start=1):
-        name = prod["product"]
-        category = prod["category"]
-        price = prod["unit_price"]
-        paid = prod["paid_product"]
-        print(f"    # {product_number} - Product: {name.capitalize()}")
-        print(f"        Category: {category.capitalize()}\n        Unit_price: ${price:.2f}\n        Paid: ${paid:.2f}")
+    print_products(receipt["products"])
 
 
 def delete_data_menu(data):
