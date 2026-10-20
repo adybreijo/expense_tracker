@@ -1,5 +1,6 @@
 import cli
 import storage
+from datetime import date
 
 from . import queries
 
@@ -189,7 +190,9 @@ def delete_data_menu(data):
         Cancelled: If the user types a cancel word.
     """
     print("\n--Delete information--")
-    option = cli.valid_option("\nMenu:\n1. Delete complete receipt\n2. Delete a product info from a receipt.\n>>: ", 1, 2)
+    option = cli.valid_option(
+        "\nMenu:\n1. Delete complete receipt\n2. Delete a product info from a receipt.\n3. Go back to menu\n>>: ", 1, 2, 3
+    )
     if option == 1:
         print("--Delete complete receipt--")
         if not data["receipts"]:
@@ -218,6 +221,8 @@ def purchase_for_period(data):
     min_date, max_date = queries.current_dates_period(data["receipts"])
     if min_date is None:
         return []
+    min_date = date.fromisoformat(min_date).strftime("%d-%m-%Y")
+    max_date = date.fromisoformat(max_date).strftime("%d-%m-%Y")
     print(f"Your receipts go to {min_date} - {max_date}")
     while True:
         start_date = cli.add_valid_date(prompt="Enter the first date: ")
