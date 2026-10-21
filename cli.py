@@ -162,6 +162,22 @@ def value_in_options(value, *options):
     return value in options
 
 
+def valid_option(prompt, *options):
+    """Ask for a number until the user types one of the given options.
+    Args:
+        prompt: Text shown to the user.
+        *options: The allowed integer values.
+    Returns:
+        int: The option the user typed.
+    Raises:
+        Cancelled: If the user types a cancel word.
+    """
+    while True:
+        option = read_int(prompt)
+        if value_in_options(option, *options):
+            return option
+
+
 def chose_from_list(options, prompt="Choose the number: ", default=None):
     """Print a numbered list and let the user pick one item from it.
     Args:

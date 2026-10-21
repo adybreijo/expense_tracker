@@ -83,11 +83,8 @@ def add_product_fields(data, known_products):
         Cancelled: If the user types a cancel word.
     """
     product = add_data(known_products, "Product: ", "product")
-    print()
     category = category_name(data["catalog"], product)
-    print()
     unit_price = cli.read_float("Product price: ", min_value=0.01)
-    print()
     paid_product = cli.read_float("How much you paid: ", min_value=0.01)
 
     return {
@@ -242,7 +239,7 @@ def create_products_data(data, list_products=None):
     try:
         while True:
             print(f"\nProducts so far: {len(list_products)}")
-            known_products = queries.only_products(data) + list_products
+            known_products = queries.only_products(data["receipts"]) + list_products
             new_expense = add_product_fields(data, known_products)
             while True:
                 action = cli.yes_no_question("Fix product info (y/n): ")
@@ -258,7 +255,7 @@ def create_products_data(data, list_products=None):
                 print(f"{product.capitalize()} is saved as {old_category.capitalize()}.")
                 recategorize = cli.yes_no_question(f"Change it to {category.capitalize()} in every receipt (y/n): ")
                 if recategorize:
-                    all_lines = queries.only_products(data) + list_products
+                    all_lines = queries.only_products(data["receipts"]) + list_products
                     changed = queries.update_category(all_lines, product, category)
                     print(f"{changed} line(s) updated.")
                 else:
@@ -266,7 +263,9 @@ def create_products_data(data, list_products=None):
             data["catalog"][product] = new_expense["category"]
             new_expense["product_id"] = queries.generate_id(list_products, "product_id")
             list_products.append(new_expense)
-            print(f" -- {new_expense['product'].capitalize()}  -{new_expense['category']} -${new_expense['paid_product']:.2f}")
+            print(
+                f"\n -- {new_expense['product'].capitalize()}  -{new_expense['category']} -${new_expense['paid_product']:.2f}\n"
+            )
             new_product = cli.yes_no_question("Add more products (y/n): ")
             if not new_product:
                 break
@@ -299,7 +298,7 @@ def add_product_incomplete_receipt(data):
     store = receipt["store"]
     total_paid = receipt["total_paid"]
 
-    print(f"Receipt updated: {store.capitalize()}, {added} product(s) added, total: ${total_paid:.2f}\n\n")
+    print(f"\nReceipt updated: {store.capitalize()}, {added} product(s) added, total: ${total_paid:.2f}\n\n")
     storage.save_json(data)
 
 
@@ -355,7 +354,7 @@ def add_complete_purchase(data):
     }
 
     data["receipts"].append(receipt)
-    print(f"Receipt saved: {store.capitalize()}, {len(products)} product(s), total: ${total_paid:.2f}\n\n")
+    print(f"\nReceipt saved: {store.capitalize()}, {len(products)} product(s), total: ${total_paid:.2f}\n\n")
     storage.save_json(data)
 
 
@@ -366,13 +365,9 @@ def add_purchase_menu(data):
         data: The full data dict ({"receipts": [], "catalog": {}, "next_receipt_id": 1}).
     """
     try:
-        print("\nMenu:\n1. Add complete receipt\n2. Add products to a receipt\n3. Go back to main menu")
-        while True:
-            user_input = cli.read_int(prompt=">>: ")
-            choice = cli.value_in_options(user_input, 1, 2, 3)
-            if choice:
-                break
-            print("Enter a valid option")
+        user_input = cli.valid_option(
+            "\nMenu:\n1. Add complete receipt\n2. Add products to a receipt\n3. Go back to main menu\n>>: ", 1, 2, 3
+        )
         if user_input == 1:
             print("--Add complete receipt--")
             add_complete_purchase(data)
