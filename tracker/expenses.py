@@ -43,20 +43,55 @@ def main_store_filter(receipts):
     print_info_by_store(store, receipts_by_store)
 
 
-def info_by_categories(receipts_by_period):
-    print("Choose the filter you wan to use: ")
-    option = cli.valid_option("Menu:\n1. Store\n2. Product\n3. Category\n4. Notes\n>>:", 1, 2, 3, 4)
-    if option == 1:
-        print("-- Stores --")
-        main_store_filter(receipts_by_period)
+def stats_product_filter(receipts, product):
+    total = 0
+    for receipt in receipts:
+        for prod in receipt["products"]:
+            if prod["product"] == product:
+                total += prod["paid_product"]
+    return total
 
-    elif option == 2:
-        pass
-    elif option == 3:
-        pass
-    elif option == 4:
-        pass
-    return
+
+def main_products_filter(receipts):
+    products = queries.values_for_field(receipts, "product")
+    if not products:
+        print(f"There are no receipts in this time period")
+        return
+    product = cli.chose_from_list(products)
+    stats = stats_product_filter(receipts, product)
+    print(f"{product.capitalize()}: ${stats:.2f}")
+
+
+def main_category_filter(receipts):
+    pass
+
+
+def info_by_period(receipts_by_period):
+    print("Choose the filter you wan to use: ")
+    while True:
+        try:
+            option = cli.valid_option("Menu:\n1. Store\n2. Product\n3. Category\n4. Notes\n5. Go back\n>>:", 1, 2, 3, 4, 5)
+        except cli.Cancelled:
+            return
+
+        try:
+            if option == 1:
+                print("-- Stores --")
+                main_store_filter(receipts_by_period)
+
+            elif option == 2:
+                print("-- Products --")
+                main_products_filter(receipts_by_period)
+
+                pass
+            elif option == 3:
+                pass
+            elif option == 4:
+                pass
+            else:
+                break
+        except cli.Cancelled:
+            print("\nOperation cancelled by user.\n")
 
 
 def expenses_by_filter(data):
@@ -66,21 +101,27 @@ def expenses_by_filter(data):
         data: The full data dict ({"receipts": [], "catalog": {}, "next_receipt_id": 1}).
     """
     print("--Expenses--")
-    try:
-        option = cli.valid_option(
-            "Choose the time period you want to use: \n1. By period\n2. All expenses\n3. Go back to menu\n>>: ", 1, 2, 3
-        )
-        if option == 1:
-            by_period = log_info.purchase_for_period(data)
-            if not by_period:
-                print(f"There are no receipts in this time period")
-                return
-            info_by_categories(by_period)
-        elif option == 2:
-            # should print: 1. total expent, 2. top 3 more buyed products and its costs, 3. the same but for category
-            print("not implemented")
-    except cli.Cancelled:
-        print("\nOperation cancelled by user.\n")
+    while True:
+        try:
+            option = cli.valid_option(
+                "Choose the time period you want to use: \n1. By period\n2. All expenses\n3. Go back to menu\n>>: ", 1, 2, 3
+            )
+        except cli.Cancelled:
+            return
+        try:
+            if option == 1:
+                by_period = log_info.purchase_for_period(data)
+                if not by_period:
+                    print(f"There are no receipts in this time period")
+                    continue
+                info_by_period(by_period)
+            elif option == 2:
+                # should print: 1. total expent, 2. top 3 more buyed products and its costs, 3. the same but for category
+                print("not implemented")
+            else:
+                break
+        except cli.Cancelled:
+            print("\nOperation cancelled by user.\n")
 
 
 # see total paid
