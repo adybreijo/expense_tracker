@@ -63,11 +63,23 @@ def main_category_filter(receipts):
     print_total_for_field(receipts, "category")
 
 
+def main_notes(receipts):
+    notes = queries.values_for_field(receipts, "notes")
+    notes = [note for note in notes if note]
+    if not notes:
+        print("There are no notes in this period")
+        return
+    note = cli.chose_from_list(notes)
+    note_receipts = queries.receipts_by_field(receipts, "notes", note)
+    total = total_price(note_receipts)
+    print(f"Total expenses for note '{note}': ${total:.2f}")
+
+
 def info_by_period(receipts_by_period):
     print("Choose the filter you want to use: ")
     while True:
         try:
-            option = cli.valid_option("Menu:\n1. Store\n2. Product\n3. Category\n4. Notes\n5. Go back\n>>:", 1, 2, 3, 4, 5)
+            option = cli.valid_option("Menu:\n1. Store\n2. Product\n3. Category\n4. Notes\n5. Go back\n>>: ", 1, 2, 3, 4, 5)
         except cli.Cancelled:
             return
 
@@ -85,7 +97,9 @@ def info_by_period(receipts_by_period):
                 main_category_filter(receipts_by_period)
 
             elif option == 4:
-                pass
+                print("-- Notes --")
+                main_notes(receipts_by_period)
+
             else:
                 break
         except cli.Cancelled:
