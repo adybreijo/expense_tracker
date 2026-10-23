@@ -26,9 +26,6 @@ def stats_by_store(receipts):
 
 def print_info_by_store(store, receipts):
     total, products = stats_by_store(receipts)
-    if not products:
-        print("There are no products in this store")
-        return
     print(f"Total expenses in store {store.capitalize()}: ${total:.2f}")
     print("Products purchases: ")
     width = max(len(product) for product, _ in products)
@@ -43,31 +40,31 @@ def main_store_filter(receipts):
     print_info_by_store(store, receipts_by_store)
 
 
-def stats_product_filter(receipts, product):
+def total_for_field(receipts, field, value):
     total = 0
-    for receipt in receipts:
-        for prod in receipt["products"]:
-            if prod["product"] == product:
-                total += prod["paid_product"]
+    for prod in queries.only_products(receipts):
+        if prod[field] == value:
+            total += prod["paid_product"]
     return total
 
 
+def print_total_for_field(receipts, field):
+    all_fields = queries.values_for_field(receipts, field)
+    value = cli.chose_from_list(all_fields)
+    total = total_for_field(receipts, field, value)
+    print(f"{value.capitalize()}: ${total:.2f}")
+
+
 def main_products_filter(receipts):
-    products = queries.values_for_field(receipts, "product")
-    if not products:
-        print(f"There are no receipts in this time period")
-        return
-    product = cli.chose_from_list(products)
-    stats = stats_product_filter(receipts, product)
-    print(f"{product.capitalize()}: ${stats:.2f}")
+    print_total_for_field(receipts, "product")
 
 
 def main_category_filter(receipts):
-    pass
+    print_total_for_field(receipts, "category")
 
 
 def info_by_period(receipts_by_period):
-    print("Choose the filter you wan to use: ")
+    print("Choose the filter you want to use: ")
     while True:
         try:
             option = cli.valid_option("Menu:\n1. Store\n2. Product\n3. Category\n4. Notes\n5. Go back\n>>:", 1, 2, 3, 4, 5)
@@ -83,9 +80,10 @@ def info_by_period(receipts_by_period):
                 print("-- Products --")
                 main_products_filter(receipts_by_period)
 
-                pass
             elif option == 3:
-                pass
+                print("-- Category --")
+                main_category_filter(receipts_by_period)
+
             elif option == 4:
                 pass
             else:
@@ -124,7 +122,6 @@ def expenses_by_filter(data):
             print("\nOperation cancelled by user.\n")
 
 
-# see total paid
-# see total paid by notes, by category, by product, by store
+# see total paid by notes
 # see total of times purshed each prodcut
 # see more detailed info
