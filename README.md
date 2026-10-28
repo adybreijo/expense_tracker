@@ -1,6 +1,6 @@
 # Expense Tracker
 
-A terminal app for logging grocery receipts and querying them later. You enter each receipt once (date, store, total paid, notes and one line per product). After that you can look up and delete your purchases by period, store, product or category.
+A terminal app for logging grocery receipts and querying them later. You enter each receipt once (date, store, total paid, notes and one line per product). After that you can look up and delete your receipts, and see how much you spent in a period: by store, product, category or note, or as a full summary.
 
 Prices are in Mexican pesos (MXN). Quantities aren't tracked: each product is a single line on a receipt, no matter how many units or kilos you bought.
 
@@ -33,9 +33,12 @@ python3 main.py
 ```
 
 Things to try:
+
 - **2 → 2** (Purchase for period) with `01-08-2026` to `30-09-2026` lists every receipt, or narrow it to one month.
 - **2 → 1 → 2** (Delete a product) on the August 2 receipt. It has two identical `milk` lines, and only the one you pick is removed.
 - **1 → 1** (Add complete receipt): known stores and products are offered in a list instead of being typed again.
+- **3 → 2** (All expenses) shows a summary of every receipt: totals by month, date, store, category, product and note.
+- **3 → 1 → 1** (By period, then Store) with `01-09-2026` to `30-09-2026` shows what you spent at one store in September, product by product.
 
 To go back to an empty tracker, delete `expenses.json`.
 
@@ -43,7 +46,8 @@ To go back to an empty tracker, delete `expenses.json`.
 
 Listing the receipts from the first ten days of September, with the sample data:
 
-```Menu:
+```
+Menu:
 1. Add (Enter new receipts, modify information...)
 2. Log (View or delete your receipts)
 3. Expenses (Show your expenses)
@@ -83,25 +87,35 @@ Receipt # 1:
         Category: Personal care
         Unit_price: $79.90
         Paid: $79.90
-
 ```
 
 ## Usage
 
 ### 1. Add
+
 - **Add complete receipt**: asks once for the fields shared by the whole receipt (date, store, total paid, notes), then asks for each product (name, category, unit price, amount paid). You can correct any field before the receipt is saved.
 - **Add products to a receipt**: appends more product lines to a receipt you already saved.
 
 For stores, categories and products the app already knows, it offers them in a numbered list so you don't have to type them again. A new product gets suggestions from the existing categories. If you give a known product a different category, the app asks whether to change it in every receipt, so a product never ends up split across two categories.
 
 ### 2. Log
+
 - **Delete**: removes a whole receipt or a single product line. Every line has its own id, so you delete exactly the one you picked, even if an identical line sits next to it. You're asked to confirm before anything is deleted.
 - **Purchase for period**: shows every receipt between two dates.
 
 ### 3. Expenses
-Totals by period, store, product and category. *This section is still in progress.*
+
+First choose the time window, then what to look at.
+
+- **By period**: asks for two dates, then lets you pick a view for the receipts in that period:
+  - **Store**: pick a store to see the total spent there and every product bought, highest amount first.
+  - **Product**: pick a product to see how many times you bought it and the total.
+  - **Category**: same as Product, for a category.
+  - **Notes**: pick a note (e.g. `weekly shopping`) to see the total of the receipts that carry it.
+- **All expenses**: a summary of every receipt you've saved: the date range, the overall total, and totals by month, date, store, category, product (also grouped by category) and note.
 
 ### Input rules
+
 - **Dates** are typed as `DD-MM-YYYY`. Impossible dates (`45-13-2026`) and future dates are rejected.
 - **Names** are stored in lowercase, so `Chicken`, `chicken` and `CHICKEN` count as the same product.
 - **Invalid input** (letters where a number is expected, a blank required field, negative numbers) is asked for again, with a message saying what was wrong.
@@ -138,7 +152,6 @@ Everything lives in a single file, `expenses.json`. It's rewritten after every o
 }
 ```
 
-
 - Dates are stored as `YYYY-MM-DD`, so sorting them alphabetically also sorts them by date.
 - `receipt_id` is unique across all receipts. `product_id` is unique only within its own receipt.
 - `catalog` remembers each product's category so it can be suggested next time.
@@ -158,11 +171,7 @@ tracker/
   purchases.py        Adding receipts and products
   log_info.py         Viewing and deleting receipts
   queries.py          Pure data helpers: filters, ids, categories, periods
-  expenses.py         Expense summaries (in progress)
+  expenses.py         Expense summaries by period, store, product, category and note
 ```
 
 The modules follow one rule: `cli.py` talks to the user and knows nothing about receipts, `queries.py` works on receipts with no input or output (data in, data out), and the `tracker` feature modules connect the two.
-
-## Status
-
-Working: adding, correcting, listing and deleting receipts and products, with data that survives crashes and bad files.
